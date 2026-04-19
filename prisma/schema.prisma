@@ -1,0 +1,198 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+enum FeeStatus {
+  PAID
+  PENDING
+  OVERDUE
+  WAIVED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LEAVE
+  LATE
+}
+
+enum ExamStatus {
+  DRAFT
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(STUDENT)
+  student   Student?
+  teacher   Teacher?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Class {
+  id           String     @id @default(cuid())
+  name         String
+  academicYear String
+  sections     Section[]
+  students     Student[]
+  teachers     Teacher[]
+  exams        Exam[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@map("classes")
+}
+
+model Section {
+  id        String   @id @default(cuid())
+  name      String
+  classId   String
+  class     Class    @relation(fields: [classId], references: [id])
+  students  Student[]
+  teachers  Teacher[]
+  attendance Attendance[]
+  
+  @@unique([classId, name])
+  @@map("sections")
+}
+
+model Student {
+  id           String   @id @default(cuid())
+  userId       String?  @unique
+  user         User?    @relation(fields: [userId], references: [id])
+  rollNumber   String   @unique
+  firstName    String
+  lastName     String
+  dateOfBirth  DateTime
+  guardianName String
+  contact      String
+  address      String?
+  classId      String
+  class        Class    @relation(fields: [classId], references: [id])
+  sectionId    String
+  section      Section  @relation(fields: [sectionId], references: [id])
+  attendance   Attendance[]
+  fees         Fee[]
+  examResults  ExamResult[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("students")
+}
+
+model Teacher {
+  id          String   @id @default(cuid())
+  userId      String?  @unique
+  user        User?    @relation(fields: [userId], references: [id])
+  employeeId  String   @unique
+  firstName   String
+  lastName    String
+  subject     String
+  contact     String
+  joinDate    DateTime
+  classId     String?
+  class       Class?   @relation(fields: [classId], references: [id])
+  sectionId   String?
+  section     Section? @relation(fields: [sectionId], references: [id])
+  attendance  Attendance[]
+  exams       Exam[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("teachers")
+}
+
+model Attendance {
+  id        String            @id @default(cuid())
+  studentId String?
+  student   Student?          @relation(fields: [studentId], references: [id])
+  teacherId String?
+  teacher   Teacher?          @relation(fields: [teacherId], references: [id])
+  sectionId String
+  section   Section           @relation(fields: [sectionId], references: [id])
+  date      DateTime
+  status    AttendanceStatus
+  remarks   String?
+  createdAt DateTime          @default(now())
+
+  @@unique([studentId, date])
+  @@map("attendance")
+}
+
+model Exam {
+  id        String      @id @default(cuid())
+  name      String
+  subject   String
+  classId   String
+  class     Class       @relation(fields: [classId], references: [id])
+  sectionId String?
+  section   Section?    @relation(fields: [sectionId], references: [id])
+  date      DateTime
+  maxMarks  Int
+  duration  String
+  status    ExamStatus  @default(SCHEDULED)
+  results   ExamResult[]
+  createdAt DateTime    @default(now())
+
+  @@map("exams")
+}
+
+model ExamResult {
+  id            String @id @default(cuid())
+  examId        String
+  exam          Exam   @relation(fields: [examId], references: [id], onDelete: Cascade)
+  studentId     String
+  student       Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  marksObtained Int
+  grade         String?
+
+  @@unique([examId, studentId])
+  @@map("exam_results")
+}
+
+model Fee {
+  id            String    @id @default(cuid())
+  studentId     String
+  student       Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  type          String
+  amount        Decimal   @db.Decimal(10, 2)
+  dueDate       DateTime
+  paidDate      DateTime?
+  receiptNumber String?
+  status        FeeStatus @default(PENDING)
+  notes         String?
+  createdAt     DateTime  @default(now())
+
+  @@map("fees")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  type      String
+  title     String
+  message   String
+  target    String
+  createdBy String
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}

@@ -1,3 +1,4 @@
+// ./lib/actions/attendance-actions.ts
 "use server";
 import { auth } from "../auth";
 import { prisma } from "../prisma";
@@ -16,26 +17,28 @@ export async function getAttendanceByDate(date: string, sectionId: string) {
   });
 }
 
-export async function markAttendance(FormData) {
+// ✅ FIXED: parameter name + type + internal references
+export async function markAttendance(formData: FormData) {
   const session = await auth();
   if (!session || !["ADMIN", "TEACHER"].includes(session.user.role))
     return { error: "Unauthorized" };
 
-  const date = new Date(data.get("date") as string);
-  const sectionId = data.get("sectionId") as string;
+  const date = new Date(formData.get("date") as string);        // ✅ formData
+  const sectionId = formData.get("sectionId") as string;        // ✅ formData
+  
   const records: Array<{
     studentId: string;
     status: "PRESENT" | "ABSENT" | "LEAVE";
   }> = [];
 
-  for (const [key, value] of data.entries()) {
+  for (const [key, value] of formData.entries()) {              // ✅ formData
     if (
       key.startsWith("student_") &&
       ["PRESENT", "ABSENT", "LEAVE"].includes(value as string)
     ) {
       records.push({
         studentId: key.replace("student_", ""),
-        status: value as any,
+        status: value as "PRESENT" | "ABSENT" | "LEAVE",       // ✅ safer cast
       });
     }
   }

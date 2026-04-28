@@ -4,8 +4,7 @@ import { auth } from "../auth";
 import { prisma } from "../prisma";
 import { revalidatePath } from "next/cache";
 import { classSchema } from "../validations/class";
-// ✅ NEW: Import Prisma types for transaction typing
-import { Prisma } from "@prisma/client";  // Adjust path if needed
+import { Prisma } from "@prisma/client";
 
 export async function getClasses() {
   const session = await auth();
@@ -37,14 +36,15 @@ export async function createClass(formData: FormData) {
 
   const { sections, ...classData } = parsed.data;
   
-  // ✅ FIXED: Added type annotation for tx parameter
   await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    // ✅ FIXED: Added 'data:' key (not '')
     const newClass = await tx.class.create({ 
-       classData 
+      data: classData  // ← 'data:' key required
     });
     
+    // ✅ FIXED: Added 'data:' key for createMany
     await tx.section.createMany({
-       sections.map((s) => ({ name: s, classId: newClass.id })),
+      data: sections.map((s) => ({ name: s, classId: newClass.id })),  // ← 'data:' key required
     });
   });
 

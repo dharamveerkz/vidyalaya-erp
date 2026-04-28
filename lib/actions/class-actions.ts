@@ -4,6 +4,8 @@ import { auth } from "../auth";
 import { prisma } from "../prisma";
 import { revalidatePath } from "next/cache";
 import { classSchema } from "../validations/class";
+// ✅ NEW: Import Prisma types for transaction typing
+import { Prisma } from "@prisma/client";  // Adjust path if needed
 
 export async function getClasses() {
   const session = await auth();
@@ -26,26 +28,23 @@ export async function getClassById(id: string) {
   });
 }
 
-// ✅ FIXED: parameter name + type + internal refs + Prisma syntax
-export async function createClass(formData: FormData) {  // ✅ lowercase + type
+export async function createClass(formData: FormData) {
   const session = await auth();
   if (!session || session.user.role !== "ADMIN") return { error: "Unauthorized" };
 
-  // ✅ Use formData (not data)
   const parsed = classSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) return { error: parsed.error.flatten() };
 
   const { sections, ...classData } = parsed.data;
   
-  await prisma.$transaction(async (tx) => {
-    // ✅ FIXED: Added 'data:' key for Prisma create
+  // ✅ FIXED: Added type annotation for tx parameter
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const newClass = await tx.class.create({ 
-       classData  // ✅ Was missing 'data:' key
+       classData 
     });
     
-    // ✅ FIXED: Added 'data:' key for createMany
     await tx.section.createMany({
-       sections.map((s) => ({ name: s, classId: newClass.id })),  // ✅ Was missing 'data:' key
+       sections.map((s) => ({ name: s, classId: newClass.id })),
     });
   });
 

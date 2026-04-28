@@ -18,6 +18,17 @@ export const auth = async () => ({
   },
 });
 
-// 3. Mock Sign In/Out
-export const signIn = async () => ({ url: "/dashboard", error: null });
-export const signOut = async () => ({ url: "/login" });
+// 3. ✅ UPDATED: Mock Sign In/Out - now accepts arguments to match usage
+export const signIn = async (provider?: string, options?: any) => {
+  // Mock: log for debugging, always succeed
+  if (options?.email) {
+    console.log("🔐 Mock signIn:", { provider, email: options.email });
+  }
+  return { url: "/dashboard", error: null };
+};
+
+export const signOut = async (options?: { redirectTo?: string }) => {
+  const redirect = options?.redirectTo || "/login";
+  console.log("🔓 Mock signOut →", redirect);
+  return { url: redirect };
+};

@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 export function StudentForm({ open, onClose, onSubmit }: { 
   open: boolean; 
   onClose: () => void; 
-  onSubmit: (data: FormData) => void  // ✅ FIXED: added 'data:' parameter name
+  onSubmit: (data: FormData) => void  // ✅ Parameter name + type
 }) {
   const handleSubmit = (e: React.FormEvent) => { 
     e.preventDefault(); 
-    onSubmit(new FormData(e.currentTarget)); 
+    // ✅ Cast currentTarget to HTMLFormElement for FormData
+    onSubmit(new FormData(e.currentTarget as HTMLFormElement)); 
   };
   
   return (
